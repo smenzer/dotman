@@ -27,7 +27,7 @@ REMOTE=${REMOTE:-https://github.com/${REPO}.git}
 
 
 status_checks() {
-	if [ -d "$DOTMAN" ]; then
+	if [ -d "$DOTMAN" ] && [ -f "${DOTMAN}/dotman.sh" ]; then
 		cat <<-EOF
 			You already have d○tman 🖖 installed.
 			You'll need to remove '$DOTMAN' if you want to reinstall.
@@ -47,19 +47,33 @@ status_checks() {
 
 		# Clone repository to ${DOTMAN} destination
 		git clone "$REMOTE" --branch ${BRANCH} --single-branch "${DOTMAN}"
+		echo "[✔️ ] Repository cloned to $(tput bold)${DOTMAN}$(tput sgr0)"
 	fi
 }
 
 set_alias(){
-	if [ -f "$HOME"/.bash_aliases ]; then
-		ALIAS_DEST="${HOME}/.bash_aliases"
+	DOTMAN_ALIAS_NAME='dotman'
+	ALIAS_FILES=( "${HOME}/.bash_aliases", "${HOME}/.bash_profile", "${HOME}/.bashrc", "${HOME}/.zshrc", "${ZDOTDIR}/.zshrc" )
+
+	for f in "${ALIAS_FILES}"; do
+		if [ -f "${f}" ]; then
+			if [ -n "$(eval "grep '^alias ${DOTMAN_ALIAS_NAME}=' ${f} 2>/dev/null")" ]; then
+				echo "[✔️ ] Alias already set for ${f}";
+			else
+				echo "alias ${DOTMAN_ALIAS_NAME}='${DOTMAN}/dotman.sh'" >> "${f}"
+				echo "[✔️ ] Alias added to ${f}";
+			fi
+			ALIAS_SET=1
+		fi
+	done
+
+	if [ -z ${ALIAS_SET} ]; then
+		echo "Couldn't set any aliases to dotman $(tput bold)${DOTMAN}/dotman.sh$(tput sgr0) due to missing rc files:"
+		for f in " - $(tput bold)${ALIAS_FILES}$(tput sgr0)"; do
+			echo ${f}
+		done
+		echo "Consider adding it manually".
 	fi
-
-	echo "alias dotman='$DOTMAN/dotman.sh'" >> "${HOME}/.bash_profile"
-	echo "alias dotman='$DOTMAN/dotman.sh'" >> "${HOME}/.bashrc"
-	echo "alias dotman='$DOTMAN/dotman.sh'" >> "${HOME}/.zshrc"
-
-	echo "[✔️ ] Set alias for d○tman"
 }
 
 main () {
