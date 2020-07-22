@@ -47,31 +47,32 @@ status_checks() {
 
 		# Clone repository to ${DOTMAN} destination
 		git clone "$REMOTE" --branch ${BRANCH} --single-branch "${DOTMAN}"
-		echo "[✔️ ] Repository cloned to $(tput bold)${DOTMAN}$(tput sgr0)"
+		echo "[✔️ ] Repository $(tput bold)${REMOTE}$(tput sgr0) cloned to $(tput bold)${DOTMAN}$(tput sgr0)"
 	fi
 }
 
 set_alias(){
 	DOTMAN_ALIAS_NAME='dotman'
-	ALIAS_FILES=( "${HOME}/.bash_aliases", "${HOME}/.bash_profile", "${HOME}/.bashrc", "${HOME}/.zshrc", "${ZDOTDIR}/.zshrc" )
+	ALIAS_FILES=( "${HOME}/.bash_aliases" "${HOME}/.bash_profile" "${HOME}/.bashrc" "${HOME}/.zshrc" "${ZDOTDIR}/.zshrc" )
+	echo "Adding aliases to ${DOTMAN}/dotman.sh"
 
-	for f in "${ALIAS_FILES}"; do
+	for f in "${ALIAS_FILES[@]}"; do
 		if [ -f "${f}" ]; then
 			if [ -n "$(eval "grep '^alias ${DOTMAN_ALIAS_NAME}=' ${f} 2>/dev/null")" ]; then
-				echo "[✔️ ] Alias already set for ${f}";
+				echo "[✔️ ] ${f} ... alias already existed, skipping";
 			else
 				echo "alias ${DOTMAN_ALIAS_NAME}='${DOTMAN}/dotman.sh'" >> "${f}"
-				echo "[✔️ ] Alias added to ${f}";
+				echo "[✔️ ] ${f} ... alias created";
 			fi
 			ALIAS_SET=1
+		else
+			echo "[  ] ${f} ... not found, skipping"
 		fi
 	done
 
 	if [ -z ${ALIAS_SET} ]; then
 		echo "Couldn't set any aliases to dotman $(tput bold)${DOTMAN}/dotman.sh$(tput sgr0) due to missing rc files:"
-		for f in " - $(tput bold)${ALIAS_FILES}$(tput sgr0)"; do
-			echo ${f}
-		done
+		printf " - $(tput bold)%s$(tput sgr0)\n" "${ALIAS_FILES[@]}"
 		echo "Consider adding it manually".
 	fi
 }
