@@ -3,25 +3,25 @@
 # Script for installing dotman
 #
 # This script should be run via curl:
-#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/Bhupesh-V/dotman/master/tools/install.sh)"
+#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/smenzer/dotman/master/tools/install.sh)"
 # or wget:
-#   sh -c "$(wget -qO- https://raw.githubusercontent.com/Bhupesh-V/dotman/master/tools/install.sh)"
+#   sh -c "$(wget -qO- https://raw.githubusercontent.com/smenzer/dotman/master/tools/install.sh)"
 # or httpie:
-#   sh -c "$(http --download https://raw.githubusercontent.com/Bhupesh-v/dotman/master/tools/install.sh)"
-# 
+#   sh -c "$(http --download https://raw.githubusercontent.com/smenzer/dotman/master/tools/install.sh)"
+#
 # As an alternative, you can first download the install script and run it afterwards:
-#   wget https://raw.githubusercontent.com/Bhupesh-V/dotman/master/tools/install.sh
+#   wget https://raw.githubusercontent.com/smenzer/dotman/master/tools/install.sh
 #   sh install.sh
 #
 # Respects the following environment variables:
-#   DOTMAN  - path to the dotman repository folder (default: $HOME/dotman)
-#   REPO    - name of the GitHub repo to install from (default: Bhupesh-V/dotman)
+#   DOTMAN  - path to the dotman repository folder (default: $HOME/src/github.com/smenzer/dotman)
+#   REPO    - name of the GitHub repo to install from (default: smenzer/dotman)
 #   BRANCH  - the branch of upstream dotman repo.
 #   REMOTE  - full remote URL of the git repo to install (default: GitHub via HTTPS)
 
 
-DOTMAN=${DOTMAN:-$HOME/dotman}
-REPO=${REPO:-Bhupesh-V/dotman}
+DOTMAN=${DOTMAN:-$HOME/src/github.com/smenzer/dotman}
+REPO=${REPO:-smenzer/dotman}
 BRANCH=${BRANCH:-master}
 REMOTE=${REMOTE:-https://github.com/${REPO}.git}
 
@@ -40,24 +40,25 @@ status_checks() {
 		echo "Can't work without Git 😞"
 		exit 1
 	else
-		# Clone repository to /home/username/dotman
-		# git clone $REMOTE --branch $BRANCH --single-branch $HOME
-		git -C "$HOME" clone "$REMOTE"
+		# Make sure destination directory exists, if not create it
+		if [ ! -d "${DOTMAN}" ]; then
+			mkdir -p ${DOTMAN}
+		fi
+
+		# Clone repository to ${DOTMAN} destination
+		git clone "$REMOTE" --branch ${BRANCH} --single-branch "${DOTMAN}"
 	fi
 }
 
 set_alias(){
 	if [ -f "$HOME"/.bash_aliases ]; then
-		echo "alias dotman='$HOME/dotman/dotman.sh'" >> "$HOME"/.bash_aliases
-	elif [ "$(basename "SHELL")" = "zsh" ]; then
-		echo "alias dotman='$HOME/dotman/dotman.sh'" >> "$HOME"/.zshrc
-	elif [ "$(basename "SHELL")" = "bash" ]; then
-		echo "alias dotman='$HOME/dotman/dotman.sh'" >> "$HOME"/.bashrc
-	else
-		echo "Couldn't set alias to dotman: $(tput bold)$HOME/dotman/dotman.sh$(tput sgr0)"
-		echo "Consider adding it manually".
-		exit 1
+		ALIAS_DEST="${HOME}/.bash_aliases"
 	fi
+
+	echo "alias dotman='$DOTMAN/dotman.sh'" >> "${HOME}/.bash_profile"
+	echo "alias dotman='$DOTMAN/dotman.sh'" >> "${HOME}/.bashrc"
+	echo "alias dotman='$DOTMAN/dotman.sh'" >> "${HOME}/.zshrc"
+
 	echo "[✔️ ] Set alias for d○tman"
 }
 
@@ -68,10 +69,10 @@ main () {
 
 	cat <<-'EOF'
 
-	      _       _                         
-	     | |     | |                        
-	   __| | ___ | |_ _ __ ___   __ _ _ __  
-	  / _` |/ _ \| __| '_ ` _ \ / _` | '_ \ 
+	      _       _
+	     | |     | |
+	   __| | ___ | |_ _ __ ___   __ _ _ __
+	  / _` |/ _ \| __| '_ ` _ \ / _` | '_ \
 	 | (_| | (_) | |_| | | | | | (_| | | | |
 	  \__,_|\___/ \__|_| |_| |_|\__,_|_| |_|
 	                                         .... is now installed
