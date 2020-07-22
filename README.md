@@ -54,26 +54,26 @@
 ### via curl ➰
 
 ```shell
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/Bhupesh-v/dotman/master/tools/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/smenzer/dotman/master/tools/install.sh)"
 ```
 
 ### via wget 📥
 
 ```shell
-sh -c "$(wget -O- https://raw.githubusercontent.com/Bhupesh-v/dotman/master/tools/install.sh)"
+sh -c "$(wget -O- https://raw.githubusercontent.com/smenzer/dotman/master/tools/install.sh)"
 ```
 
 ### via httpie 🥧
 
 ```shell
-sh -c "$(http --download https://raw.githubusercontent.com/Bhupesh-v/dotman/master/tools/install.sh)"
+sh -c "$(http --download https://raw.githubusercontent.com/smenzer/dotman/master/tools/install.sh)"
 ```
 
 > **dotman** is installed by default in `/home/username/dotman`. Your `$HOME` directory.
 
 ### Manually ❓
 
-1. Just grab **dotman.sh** from [Releases 🔼](https://github.com/Bhupesh-V/dotman/releases) and store it anywhere on your system.
+1. Just grab **dotman.sh** from [Releases 🔼](https://github.com/smenzer/dotman/releases) and store it anywhere on your system.
 2. Change file mode to be 🏃 executable.
   ```bash
   chmod +x dotman.sh
