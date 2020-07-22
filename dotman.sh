@@ -7,18 +7,20 @@ IFS=$'\n'
 set +x
 
 VERSION="v0.1.0"
-DOTMAN_LOGO=$(cat << "LOGO"
+DOTMAN_LOGO="DOTMAN
+"
+# DOTMAN_LOGO=$(cat << "LOGO"
 
-      _       _                         
-     | |     | |                        
-   __| | ___ | |_ _ __ ___   __ _ _ __  
-  / _` |/ _ \| __| '_ ` _ \ / _` | '_ \ 
- | (_| | (_) | |_| | | | | | (_| | | | |
-  \__,_|\___/ \__|_| |_| |_|\__,_|_| |_|
-                                        
+#       _       _
+#      | |     | |
+#    __| | ___ | |_ _ __ ___   __ _ _ __
+#   / _` |/ _ \| __| '_ ` _ \ / _` | '_ \
+#  | (_| | (_) | |_| | | | | | (_| | | | |
+#   \__,_|\___/ \__|_| |_| |_|\__,_|_| |_|
 
-LOGO
-)
+
+# LOGO
+# )
 
 # check if tput exists
 if ! command -v tput &> /dev/null
@@ -60,12 +62,12 @@ repo_check(){
 	# check if dotfile repo is present inside DOT_DEST
 
 	DOT_REPO_NAME=$(basename "${DOT_REPO}")
-	# all paths are relative to HOME
-	if [[ -d ${HOME}/${DOT_DEST}/${DOT_REPO_NAME} ]]; then
-	    echo -e "\nFound ${BOLD}${DOT_REPO_NAME}${RESET} as a dotfile repo in ${BOLD}${HOME}/${DOT_DEST}/${RESET}"
+	DOT_REPO_NAME=${DOT_REPO_NAME::${#DOT_REPO_NAME}-4}
+	if [[ -d ${DOT_DEST} ]]; then
+	    echo -e "\nFound ${BOLD}${DOT_DEST}${RESET} as a dotfile repo"
 	else
-	    echo -e "\n\n[❌] ${BOLD}${DOT_REPO_NAME}${RESET} not present inside path ${BOLD}${HOME}/${DOT_DEST}${RESET}"
-		read -p "Should I clone it ? [Y/n]: " -n 1 -r USER_INPUT
+	    echo -e "\n\n[❌] ${BOLD}${DOT_DEST}${RESET} not present"
+		read -p "Should I clone ${BOLD}${DOT_REPO}${RESET} ? [Y/n]: " -n 1 -r USER_INPUT
 		USER_INPUT=${USER_INPUT:-y}
 		case $USER_INPUT in
 			[y/Y]* ) clone_dotrepo "$DOT_DEST" "$DOT_REPO" ;;
@@ -77,44 +79,58 @@ repo_check(){
 
 find_dotfiles() {
 	printf "\n"
-	# while read -r value; do
-	#     dotfiles+=($value)
-	# done < <( find "${HOME}" -maxdepth 1 -name ".*" -type f )
-	readarray -t dotfiles < <( find "${HOME}" -maxdepth 1 -name ".*" -type f )
+	while read -r value; do
+	    dotfiles+=($value)
+	done < <( find "${HOME}" -maxdepth 1 -name ".*" -type f )
+	# readarray -t dotfiles < <( find "${HOME}" -maxdepth 1 -name ".*" -type f )
 	printf '%s\n' "${dotfiles[@]}"
 }
 
 add_env() {
 	# export environment variables
-	echo -e "\nExporting env variables DOT_DEST & DOT_REPO ..."
+	RC_FILES=( "${HOME}/.bash_profile" "${HOME}/.bashrc" "${HOME}/.zshrc" "${ZDOTDIR}/.zshrc" )
+	printf "\nExporting env variables DOT_DEST & DOT_REPO ...\n"
 
-	current_shell=$(basename "$SHELL")
-	if [[ $current_shell == "zsh" ]]; then
-		echo "export DOT_REPO=$1" >> "$HOME"/.zshrc
-		echo "export DOT_DEST=$2" >> "$HOME"/.zshrc
-	elif [[ $current_shell == "bash" ]]; then
-		# assume we have a fallback to bash
-		echo "export DOT_REPO=$1" >> "$HOME"/.bashrc
-		echo "export DOT_DEST=$2" >> "$HOME"/.bashrc
-	else
-		echo "Couldn't export ${BOLD}DOT_REPO=$1${RESET} and ${BOLD}DOT_DEST=$2${RESET}"
+	for f in "${RC_FILES[@]}"; do
+		if [ -f "${f}" ]; then
+			if [ -n "$(eval "grep '^export DOT_REPO=' ${f} 2>/dev/null")" ]; then
+				echo "[✔️ ] ${f} ... DOT_REPO env variables already existed, skipping";
+			else
+				echo "export DOT_REPO=$1" >> "${f}"
+				echo "[✔️ ] ${f} ... DOT_REPO env variable exported";
+			fi
+
+			if [ -n "$(eval "grep '^export DOT_DEST=' ${f} 2>/dev/null")" ]; then
+				echo "[✔️ ] ${f} ... DOT_DEST env variables already existed, skipping";
+			else
+				echo "export DOT_DEST=$2" >> "${f}"
+				echo "[✔️ ] ${f} ... DOT_DEST env variable exported";
+			fi
+			RC_SET=1
+		else
+			echo "[  ] ${f} ... not found, skipping"
+		fi
+	done
+
+	if [ -z ${RC_SET} ]; then
+		echo "Couldn't export ${BOLD}DOT_REPO=$1${RESET} and ${BOLD}DOT_DEST=$2${RESET} due to missing rc files:"
+		printf " - $(tput bold)%s$(tput sgr0)\n" "${RC_FILES[@]}"
 		echo "Consider exporting them manually".
 		exit 1
 	fi
-	echo -e "Configuration for SHELL: ${BOLD}$current_shell${RESET} has been updated."
+
+	printf "Configuration for all shells has been updated."
 }
 
 goodbye() {
-	printf "\a\n\n%s\n" "${BOLD}Thanks for using d○tman 🖖.${RESET}"
-	printf "\n%s%s" "${BOLD}Follow ${BG_AQUA}${FG_BLACK}@bhupeshimself${RESET}" "${BOLD} on Twitter "
-	printf "%s\n" "for more updates.${RESET}"
+	printf "\a\n\n%s\n" "${BOLD}Thanks for using d○tman 🖖${RESET}"
 	printf "%s\n" "${BOLD}Report Bugs : ${UL}https://github.com/Bhupesh-V/dotman/issues${RUL}${RESET}"
 }
 
 dot_pull() {
 	# pull changes (if any) from the host repo
 	echo -e "\n${BOLD}Pulling dotfiles ...${RESET}"
-	dot_repo="${HOME}/${DOT_DEST}/$(basename "${DOT_REPO}")"
+	dot_repo="${DOT_DEST}/$(basename "${DOT_REPO}")"
 	echo -e "\nPulling changes in $dot_repo\n"
 	git -C "$dot_repo" pull origin master
 }
@@ -126,18 +142,21 @@ diff_check() {
 	fi
 
 	# dotfiles in repository
-	readarray -t dotfiles_repo < <( find "${HOME}/${DOT_DEST}/$(basename "${DOT_REPO}")" -maxdepth 1 -name ".*" -type f )
+	while read -r value; do
+	    dot_repo+=($value)
+	done < <( find "${DOT_DEST}" -maxdepth 1 -name ".*" -type f )
+	# readarray -t dot_repo < <( find "${DOT_DEST}/$(basename "${DOT_REPO}")" -maxdepth 1 -name ".*" -type f )
 
 	# check length here ?
-	for i in "${!dotfiles_repo[@]}"
+	for i in "${!dot_repo[@]}"
 	do
-		dotfile_name=$(basename "${dotfiles_repo[$i]}")
+		dotfile_name=$(basename "${dot_repo[$i]}")
 		# compare the HOME version of dotfile to that of repo
-		diff=$(diff -u --suppress-common-lines --color=always "${dotfiles_repo[$i]}" "${HOME}/${dotfile_name}")
+		diff=$(diff -u --suppress-common-lines --color=always "${dot_repo[$i]}" "${HOME}/${dotfile_name}")
 		if [[ $diff != "" ]]; then
 			if [[ $1 == "show" ]]; then
 				printf "\n\n%s" "Running diff between ${BOLD} ${FG_ORANGE}${HOME}/${dotfile_name}${RESET} and "
-				printf "%s\n" "${BOLD}${FG_ORANGE}${dotfiles_repo[$i]}${RESET}"
+				printf "%s\n" "${BOLD}${FG_ORANGE}${dot_repo[$i]}${RESET}"
 				printf "%s\n\n" "$diff"
 			fi
 			file_arr+=("${dotfile_name}")
@@ -159,10 +178,10 @@ dot_push() {
 		echo -e "\n${BOLD}Following dotfiles changed${RESET}"
 		for file in "${file_arr[@]}"; do
 			echo "$file"
-			cp "${HOME}/$file" "${HOME}/${DOT_DEST}/$(basename "${DOT_REPO}")"
+			cp "${HOME}/$file" "${DOT_DEST}/$(basename "${DOT_REPO}")"
 		done
 
-		dot_repo="${HOME}/${DOT_DEST}/$(basename "${DOT_REPO}")"
+		dot_repo="${DOT_DEST}/$(basename "${DOT_REPO}")"
 		git -C "$dot_repo" add -A
 
 		echo -e "${BOLD}Enter Commit Message (Ctrl + d to save): ${RESET}"
@@ -180,17 +199,18 @@ dot_push() {
 
 clone_dotrepo (){
 	# clone the repo in the destination directory
-	DOT_DEST=$1
-	DOT_REPO=$2
-	
-	if git -C "${HOME}/${DOT_DEST}" clone "${DOT_REPO}"; then
+	dot_dest=$1
+	dot_repo=$2
+
+	if git -C "${dot_dest}" clone "${dot_repo}"; then
 		if [[ -z ${DOT_REPO} && -z ${DOT_DEST} ]]; then
-			add_env "$DOT_REPO" "$DOT_DEST"
+			add_env "$dot_repo" "$dot_dest"
 		fi
 		echo -e "\n[✔️ ] dotman successfully configured"
+		echo -e "\n\nMake sure to reload your shell before running dotman again\n"
 	else
 		# invalid arguments to exit, Repository Not Found
-		echo -e "\n[❌] $DOT_REPO Unavailable. Exiting"
+		echo -e "\n[❌] ${dot_repo} Unavailable. Exiting"
 		exit 1
 	fi
 }
@@ -198,16 +218,19 @@ clone_dotrepo (){
 initial_setup() {
 	echo -e "\n\nFirst time use 🔥, Set Up ${BOLD}d○tman${RESET}"
 	echo -e "....................................\n"
-	read -p "➤ Enter dotfiles repository URL : " -r DOT_REPO
+	read -p "➤ Enter dotfiles repository URL (default: git@github.com:smenzer/dotfiles.git): " -r dot_repo
+	dot_repo=${dot_repo:-git@github.com:smenzer/dotfiles.git}
 
-	# isValidURL=$(curl -IsS --silent -o /dev/null -w '%{http_code}' "${DOT_REPO}")
-	read -p "➤ Where should I clone ${BOLD}$(basename "${DOT_REPO}")${RESET} (${HOME}/..): " -r DOT_DEST
-	DOT_DEST=${DOT_DEST:-$HOME}
-	if [[ -d "$HOME/$DOT_DEST" ]]; then
+	# isValidURL=$(curl -IsS --silent -o /dev/null -w '%{http_code}' "${dot_repo}")
+	read -p "➤ Where should I clone ${BOLD}$(basename "${dot_repo}")${RESET} (default: ${HOME}/src/github.com/smenzer): " -r dot_dest
+	dot_dest=${dot_dest:-$HOME/src/github.com/smenzer}
+	mkdir -p ${dot_dest}
+
+	if [[ -d "$dot_dest" ]]; then
 		printf "\n%s\r\n" "${BOLD}Calling 📞 Git ... ${RESET}"
-		clone_dotrepo "$DOT_DEST" "DOT_REPO"
+		clone_dotrepo "$dot_dest" "$dot_repo"
 	else
-		echo -e "\n[❌]${BOLD}$DOT_DEST${RESET} Not a Valid directory"
+		echo -e "\n[❌]${BOLD}$dot_dest${RESET} Not a Valid directory"
 		exit 1
 	fi
 }
@@ -229,7 +252,7 @@ manage() {
 			[2]* ) dot_push;;
 			[3]* ) dot_pull;;
 			[4]* ) find_dotfiles;;
-			[q/Q]* ) goodbye 
+			[q/Q]* ) goodbye
 					 exit;;
 			* )     printf "\n%s\n" "[❌]Invalid Input 🙄, Try Again";;
 		esac
@@ -239,7 +262,7 @@ manage() {
 intro() {
 	BOSS_NAME=$LOGNAME
 	echo -e "\n\aHi ${BOLD}${FG_ORANGE}$BOSS_NAME${RESET} 👋"
-	printf "%s" "${BOLD}${FG_SKYBLUE}${DOTMAN_LOGO}${RESET}"	
+	printf "%s" "${BOLD}${FG_SKYBLUE}${DOTMAN_LOGO}${RESET}"
 }
 
 init_check() {
