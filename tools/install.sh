@@ -23,7 +23,7 @@
 DOTMAN=${DOTMAN:-$HOME/src/github.com/smenzer/dotman}
 REPO=${REPO:-smenzer/dotman}
 BRANCH=${BRANCH:-master}
-REMOTE=${REMOTE:-https://github.com/${REPO}.git}
+REMOTE=${REMOTE:-git@github.com:${REPO}.git}
 
 
 status_checks() {
